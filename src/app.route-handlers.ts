@@ -6,13 +6,15 @@ import { getRedisClient } from './app.storage';
 
 export const registerHandler = (req: Request, res: Response) => {
   const { username, password } = req.body;
+  const usernameCheckResult = isUsernameValid(username);
+  const passwordCheckResult = isPasswordValid(password);
 
-  if (!isUsernameValid(username)) {
-    return res.status(400).json({ errorMessage: 'message' });
+  if (typeof usernameCheckResult === 'string') {
+    return res.status(400).json({ errorMessage: usernameCheckResult });
   }
 
-  if (!isPasswordValid(password)) {
-    return res.status(400).json({ errorMessage: 'message' });
+  if (typeof passwordCheckResult === 'string') {
+    return res.status(400).json({ errorMessage: passwordCheckResult });
   }
 
   const salt = genSaltSync(10);
@@ -38,13 +40,17 @@ export const loginHandler = (req: Request, res: Response) => {
   try {
     const { username, password } = req.body;
 
+    if (!username || !password) {
+      return res.status(401).send({ errorMessage: "Invalid credentials" });
+    }
+
     getRedisClient().hgetall(username, (err: any, obj: any) => {
       if (!obj) {
         return res.send({ message: "Invalid email" });
       }
 
       if (compareSync(password, obj.password)) {
-        return res.send({ message: "Invalid  password" });
+        return res.status(401).send({ errorMessage: "Invalid credentials" });
       }
 
       (req.session as any)['username'] = obj.username;
