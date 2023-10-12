@@ -49,7 +49,7 @@ export const loginHandler = (req: Request, res: Response) => {
         return res.send({ message: "Invalid email" });
       }
 
-      if (compareSync(password, obj.password)) {
+      if (!compareSync(password, obj.password)) {
         return res.status(401).send({ errorMessage: "Invalid credentials" });
       }
 
