@@ -61,7 +61,7 @@
     event.preventDefault();
 
     try {
-      const response = await fetch('/login', getFetchOptions(registerForm));
+      const response = await fetch('/login', getFetchOptions(loginForm));
       const data = await response.json();
 
       if (response.ok) {
