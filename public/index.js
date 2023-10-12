@@ -1,5 +1,3 @@
-const { create } = require("domain");
-
 (() => {
   let screenContainers, registerForm, loginForm;
   let toastWidgetOk, toastWidgetBad, toastBodyOk, toastBodyBad;
