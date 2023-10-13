@@ -12,14 +12,14 @@
     });
   }
 
-  const showApp = (data) => {
+  const showApp = () => {
     const h1 = document.querySelector('#app-h1');
 
-    showRequiredContainer('app');
-
     if (h1) {
-      h1.innerText = `¡Hola ${data.username}!`;
+      h1.innerText = `Welcome authorized user!`;
     }
+
+    showRequiredContainer('app');
   };
 
   const showLoginForm = () => {
@@ -42,30 +42,34 @@
     toastWidgetBad.show();
   };
 
-  const getFetchOptions = (formEl) => {
+  const getFetchParams = (formEl) => {
     const data = {};
     const formData = new FormData(formEl);
 
     for (const pair of formData.entries()) {
-      data[pair[0]] = pair[1];
+      const [key, value] = pair;
+      data[key] = value;
     }
 
-    return {
-      method: 'POST',
-      body: JSON.stringify(data),
-      headers: { 'Content-Type': 'application/json' }
-    };
+    return [
+      formEl.action,
+      {
+        method: 'POST',
+        body: JSON.stringify(data),
+        headers: { 'Content-Type': 'application/json' }
+      }
+    ];
   }
 
   const loginHandler = async (event) => {
     event.preventDefault();
 
     try {
-      const response = await fetch('/login', getFetchOptions(loginForm));
+      const response = await fetch(...getFetchParams(loginForm));
       const data = await response.json();
 
       if (response.ok) {
-        showApp(data);
+        showApp();
       } else {
         showBadToast(data.errorMessage);
       }
@@ -78,7 +82,7 @@
     event.preventDefault();
 
     try {
-      const response = await fetch('/register', getFetchOptions(registerForm));
+      const response = await fetch(...getFetchParams(registerForm));
       const data = await response.json();
 
       if (response.ok) {
@@ -135,15 +139,15 @@
   const main = async () => {
     try {
       const response = await fetch('/protected');
-      const data = await response.json();
 
       if (response.ok) {
-        showApp(data);
+        showApp();
       } else {
         showLoginForm();
       }
     } catch (error) {
       showBadToast(error.message);
+      setTimeout(main, 10000);
     }
   };
 
