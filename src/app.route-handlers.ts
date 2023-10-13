@@ -1,10 +1,17 @@
-import { Request, Response } from 'express';
-import { hashSync, genSaltSync, compareSync } from 'bcrypt';
-import { isUsernameValid, isPasswordValid } from './app.service';
-import { getRedisClient } from './app.storage';
+import { Redis } from 'ioredis';
+import { v4 as uuidv4 } from 'uuid';
+import { Request, Response, NextFunction } from 'express';
+import { isUsernameValid, isPasswordValid } from './app.validation';
+import {
+  createUser,
+  isUserExists,
+  isUserCredentialsValid,
+  getAllowedContent
+} from './app.service';
+import { getSafelyDbResult } from './storage';
 
 
-export const registerHandler = (req: Request, res: Response) => {
+export const registerHandler = async (req: Request, res: Response, next: NextFunction) => {
   const { username, password } = req.body;
   const usernameCheckResult = isUsernameValid(username);
   const passwordCheckResult = isPasswordValid(password);
@@ -17,58 +24,46 @@ export const registerHandler = (req: Request, res: Response) => {
     return res.status(400).json({ errorMessage: passwordCheckResult });
   }
 
-  const salt = genSaltSync(10);
-  const hashedPassword = hashSync(password, salt);
-
-  try {
-    getRedisClient().hmset(username,
-      'username', username,
-      'password', hashedPassword,
-      function (err: any, reply: any) {
-        if (err) {
-          console.log(err);
-        }
-        res.status(200).send({ statusMessage: `User '${username}' has been created`});
-      });
-  } catch (e) {
-    console.log(e);
-    res.sendStatus(400);
+  if (await isUserExists(username, next)) {
+    return res.status(409).json({ errorMessage: 'Username already taken' });
   }
+
+  await createUser(username, password, next);
+  res.status(201).json({ statusMessage: 'User has been created'});
 };
 
-export const loginHandler = (req: Request, res: Response) => {
-  try {
-    const { username, password } = req.body;
 
-    if (!username || !password) {
-      return res.status(401).send({ errorMessage: "Invalid credentials" });
-    }
+export const loginHandler = async (req: Request, res: Response, next: NextFunction) => {
+  const { username, password } = req.body;
 
-    getRedisClient().hgetall(username, (err: any, obj: any) => {
-      if (!obj) {
-        return res.send({ message: "Invalid email" });
-      }
-
-      if (!compareSync(password, obj.password)) {
-        return res.status(401).send({ errorMessage: "Invalid credentials" });
-      }
-
-      (req.session as any)['username'] = obj.username;
-      // TODO
-      return res.redirect('/home');
-    });
-  } catch (e) {
-    console.log(e);
+  if (!await isUserCredentialsValid(username, password, next)) {
+    return res.status(401).json({ errorMessage: 'Invalid credentials' });
   }
+
+  const token = uuidv4();
+  const func = (client: Redis) => client.set(token, username, 'EX', 3600);
+  await getSafelyDbResult(func, next);
+  res.cookie('token', token).status(200).json(getAllowedContent(username));
 };
 
-export const logoutHandler = (req: Request, res: Response) => {
-  req.session.destroy((err: any) => {
-    if (err) {
-      return res.redirect('/home')
-    }
+export const logoutHandler = async (req: Request, res: Response, next: NextFunction) => {
+  const token = req.cookies['token'];
 
-    res.clearCookie('process.env.SESS_NAME') // TODO
-    res.redirect('/login')
-  });
+  if (!token) {
+    return res.status(401).json({ error: 'Unauthorized' });
+  }
+
+  await getSafelyDbResult((client: Redis) => client.del(token), next);
+  res.json({ statusMessage: 'Logout successful' });
+};
+
+export const dataHandler = async (req: Request, res: Response, next: NextFunction) => {
+  const token = req.cookies['token'];
+  const username = await getSafelyDbResult((client: Redis) => client.get(token), next);
+
+  if (!token || !username) {
+    return res.status(403).json({ errorMessage: 'Please login first' });
+  }
+
+  res.status(200).json(getAllowedContent(username));
 };
