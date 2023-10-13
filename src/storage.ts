@@ -25,8 +25,8 @@ export const getRedisClient = (): Redis => {
   redisClient = new Redis({
     username: REDIS_USER,
     password: REDIS_PWD,
-    db: REDIS_DB,
-    port: REDIS_PORT,
+    db: REDIS_DB || undefined,
+    port: REDIS_PORT || undefined,
     host: REDIS_HOST
   });
 
