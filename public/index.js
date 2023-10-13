@@ -12,11 +12,16 @@
     });
   }
 
-  const showApp = () => {
+  const showApp = (data) => {
     const h1 = document.querySelector('#app-h1');
+    const h4 = document.querySelector('#app-h4');
 
     if (h1) {
-      h1.innerText = `Welcome authorized user!`;
+      h1.innerText = `Welcome ${data.username}!`;
+    }
+
+    if (h4) {
+      h4.innerText = `We have a secret message for you: ${data.sha256}`;
     }
 
     showRequiredContainer('app');
@@ -69,7 +74,7 @@
       const data = await response.json();
 
       if (response.ok) {
-        showApp();
+        showApp(data);
       } else {
         showBadToast(data.errorMessage);
       }
@@ -139,9 +144,10 @@
   const main = async () => {
     try {
       const response = await fetch('/protected');
+      const data = await response.json();
 
       if (response.ok) {
-        showApp();
+        showApp(data);
       } else {
         showLoginForm();
       }
