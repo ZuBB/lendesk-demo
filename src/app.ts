@@ -3,7 +3,7 @@ import 'dotenv/config';
 import { join } from 'path';
 import helmet from 'helmet';
 import cookieParser from 'cookie-parser';
-import { dataHandler, registerHandler, loginHandler, logoutHandler } from './app.route-handlers';
+import { dataHandler, registerHandler, loginHandler, logoutHandler } from './app.controller';
 import { getRedisClient } from './storage';
 
 const { APP_PORT: port } = process.env;
