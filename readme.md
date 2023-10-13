@@ -1,5 +1,6 @@
 ## Boostrap
 
+* node18 through installer or any version manager
 * npm i
 * brew install redis (or use Docker file)
 
