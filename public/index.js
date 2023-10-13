@@ -103,7 +103,7 @@
 
   const logoutHandler = async () => {
     try {
-      const response = await fetch('/logout', { method: 'DELETE' });
+      const response = await fetch('/logout', { method: 'POST' });
       const data = await response.json();
 
       if (response.ok) {
