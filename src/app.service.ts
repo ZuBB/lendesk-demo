@@ -1,25 +1,42 @@
-import { z } from 'zod';
+import Redis from 'ioredis';
+import { NextFunction } from 'express';
+import { hashSync, genSaltSync, compareSync } from 'bcrypt';
+import { getSafelyDbResult } from './storage';
 
-const usernameSchema = z
-  .string()
-  .min(3, 'Username should contain at least 4 characters')
-  .regex(/^[A-Z\d_]+$/i, 'Only latin letters, numbers and _ is allowed')
-  .regex(/^[A-Z]/i, 'Username should start with letter');
+export const isUserExists = async (username: string, next: NextFunction): Promise<boolean> => {
+  const keysCount = await getSafelyDbResult(
+    async (client: Redis) => await client.exists(username),
+    next
+  );
 
-const passwordSchema = z
-  .string()
-  .min(8, 'Password should contain at least 8 characters')
-  .regex(/[A-Z]+/, 'Should include at least 1 uppercase letter')
-  .regex(/[a-z]+/, 'Should include at least 1 lowercase letter')
-  .regex(/[\d]+/, 'Should include at least 1 digit')
-  .regex(/[!@#$%^&*()_+]+/, 'Should include at least 1 special symbol (eg. %&!)');
-
-export const isUsernameValid = (username: string | undefined): boolean | string => {
-  const result = usernameSchema.safeParse(username);
-  return result.success || result.error.format()._errors[0];
+  return keysCount === 1;
 };
 
-export const isPasswordValid = (password: string | undefined): boolean | string => {
-  const result = passwordSchema.safeParse(password);
-  return result.success || result.error.format()._errors[0];
+export const createUser = async (
+  username: string,
+  password: string,
+  next: NextFunction
+): Promise<void> => {
+  const salt = genSaltSync(10);
+  const hashedPassword = hashSync(password, salt);
+
+  await getSafelyDbResult(
+    async (client: Redis) => await client.hset(username, 'password', hashedPassword),
+    next
+  );
 };
+
+export const isUserCredentialsValid = async (
+  username: string,
+  password: string,
+  next: NextFunction
+): Promise<boolean> => {
+  if (!username || !password) return false;
+
+  const storedPassword = await getSafelyDbResult(
+    async (client: Redis) => await client.hget(username, 'password'),
+    next
+  );
+
+  return !!storedPassword && compareSync(password, storedPassword);
+}
