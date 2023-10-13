@@ -1,4 +1,9 @@
 import { z } from 'zod';
+import { fromZodError } from 'zod-validation-error';
+
+type ValidationResult = true | string;
+
+const zodErrorOptions = { maxIssuesInMessage: 1, prefix: null };
 
 const usernameSchema = z
   .string()
@@ -14,12 +19,18 @@ const passwordSchema = z
   .regex(/[\d]+/, 'Password: should include at least 1 digit')
   .regex(/[!@#$%^&*_+]+/, 'Should include at least 1 special symbol (eg. %&!');
 
-export const isUsernameValid = (username: string | undefined): boolean | string => {
-  const result = usernameSchema.safeParse(username);
-  return result.success || result.error.format()._errors[0];
+export const isUsernameValid = (username: string | undefined): ValidationResult => {
+  return testDataAgainstSchema(usernameSchema, username);
 };
 
-export const isPasswordValid = (password: string | undefined): boolean | string => {
-  const result = passwordSchema.safeParse(password);
-  return result.success || result.error.format()._errors[0];
+export const isPasswordValid = (password: string | undefined): ValidationResult => {
+  return testDataAgainstSchema(passwordSchema, password);
+};
+
+const testDataAgainstSchema = (
+  schema: z.ZodTypeAny,
+  data: unknown
+): ValidationResult => {
+  const result = schema.safeParse(data);
+  return result.success || fromZodError(result.error, zodErrorOptions).message;
 };

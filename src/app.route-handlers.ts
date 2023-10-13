@@ -16,11 +16,11 @@ export const registerHandler = async (req: Request, res: Response, next: NextFun
   const usernameCheckResult = isUsernameValid(username);
   const passwordCheckResult = isPasswordValid(password);
 
-  if (typeof usernameCheckResult === 'string') {
+  if (!usernameCheckResult !== true) {
     return res.status(400).json({ errorMessage: usernameCheckResult });
   }
 
-  if (typeof passwordCheckResult === 'string') {
+  if (!passwordCheckResult !== true) {
     return res.status(400).json({ errorMessage: passwordCheckResult });
   }
 
