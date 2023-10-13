@@ -1,5 +1,6 @@
 import Redis from 'ioredis';
 import { NextFunction } from 'express';
+import { createHash } from 'node:crypto';
 import { hashSync, genSaltSync, compareSync } from 'bcrypt';
 import { getSafelyDbResult } from './storage';
 
@@ -39,4 +40,11 @@ export const isUserCredentialsValid = async (
   );
 
   return !!storedPassword && compareSync(password, storedPassword);
-}
+};
+
+export const getAllowedContent = (username: string) => {
+  const hash = createHash('sha256');
+  hash.update(new Date().toISOString());
+  const sha256 = hash.copy().digest('hex').substring(0, 8);
+  return { username, sha256 };
+};
