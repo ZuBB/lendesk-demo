@@ -1,3 +1,4 @@
+import { NextFunction } from 'express';
 import 'dotenv/config';
 import Redis from 'ioredis';
 
@@ -16,7 +17,7 @@ export const getRedisClient = (): Redis => {
     REDIS_HOST as string
   );
 
-  redisClient.on('error', (err) => {
+  redisClient.on('error', (err: Error) => {
     console.log('Error occured during talking to redis:' + err);
   });
 
@@ -25,4 +26,15 @@ export const getRedisClient = (): Redis => {
   });
 
   return redisClient;
-}
+};
+
+export const getSafelyDbResult = async <T>(
+  method: (client: Redis) => Promise<T>,
+  next: NextFunction
+): Promise<T | undefined> => {
+  try {
+    return await method(getRedisClient());
+  } catch (error) {
+    next(error);
+  }
+};
