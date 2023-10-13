@@ -12,7 +12,7 @@ const passwordSchema = z
   .regex(/[A-Z]+/, 'Password: should include at least 1 uppercase letter')
   .regex(/[a-z]+/, 'Password: should include at least 1 lowercase letter')
   .regex(/[\d]+/, 'Password: should include at least 1 digit')
-  .regex(/[!@#$%^&*()_+]+/, 'Password: should include at least 1 special symbol (eg. %&!)');
+  .regex(/[!@#$%^&*_+]+/, 'Should include at least 1 special symbol (eg. %&!');
 
 export const isUsernameValid = (username: string | undefined): boolean | string => {
   const result = usernameSchema.safeParse(username);
