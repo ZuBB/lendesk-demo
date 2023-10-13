@@ -1,8 +1,19 @@
+/// <reference path="types/process-env.d.ts" />
+
 import { NextFunction } from 'express';
 import 'dotenv/config';
 import Redis from 'ioredis';
 
-const { REDIS_HOST, REDIS_PORT } = process.env;
+const {
+  REDIS_HOST,
+  REDIS_PORT: REDIS_PORT_STR,
+  REDIS_PWD,
+  REDIS_USER,
+  REDIS_DB: REDIS_DB_STR,
+} = process.env;
+
+const REDIS_PORT = parseInt(REDIS_PORT_STR, 10);
+const REDIS_DB = parseInt(REDIS_DB_STR, 10);
 
 let redisClient: Redis;
 
@@ -11,11 +22,13 @@ export const getRedisClient = (): Redis => {
     return redisClient;
   }
 
-  redisClient = new Redis(
-    // TODO
-    REDIS_PORT as unknown as number,
-    REDIS_HOST as string
-  );
+  redisClient = new Redis({
+    username: REDIS_USER,
+    password: REDIS_PWD,
+    db: REDIS_DB,
+    port: REDIS_PORT,
+    host: REDIS_HOST
+  });
 
   redisClient.on('error', (err: Error) => {
     console.log('Error occured during talking to redis:' + err);
