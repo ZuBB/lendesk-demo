@@ -31,7 +31,7 @@ export const getRedisClient = (): Redis => {
   });
 
   redisClient.on('error', (err: Error) => {
-    console.log('Error occured during talking to redis:' + err);
+    console.log('Error occurred during talking to redis:' + err);
   });
 
   redisClient.on('connect', () => {
